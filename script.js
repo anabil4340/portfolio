@@ -9,27 +9,31 @@
 const backToTop = document.getElementById("back-to-top");
 
 /* Display the button after scrolling down. */
-window.addEventListener("scroll", function () {
-  if (window.scrollY > 300) {
-    backToTop.classList.add("visible");
-  } else {
-    backToTop.classList.remove("visible");
-  }
-});
-
-/* Return to the top when the button is clicked. */
-backToTop.addEventListener("click", function () {
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth",
+if (backToTop) {
+  window.addEventListener("scroll", function () {
+    if (window.scrollY > 300) {
+      backToTop.classList.add("visible");
+    } else {
+      backToTop.classList.remove("visible");
+    }
   });
-});
+
+  /* Return to the top when the button is clicked. */
+  backToTop.addEventListener("click", function () {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  });
+}
 
 /* Mini hacker navigation animation */
 const navBuilder = document.getElementById("nav-builder");
 const navLogo = document.getElementById("mascot-logo");
 
 if (navBuilder && navLogo) {
+  const navbar = navBuilder.parentElement;
+
   const jumpFrames = [
     "sprites/jump_01.png",
     "sprites/jump_02.png",
@@ -50,13 +54,13 @@ if (navBuilder && navLogo) {
     "sprites/run_08.png",
   ];
 
-  //Grab Frames
+  // Grab Frames
   const grabFrames = ["sprites/grab_01.png", "sprites/grab_02.png"];
 
-  //Throw Frames
+  // Throw Frames
   const throwFrames = ["sprites/throw_01.png", "sprites/throw_02.png"];
 
-  //Catch Frames
+  // Catch Frames
   const catchFrames = [
     "sprites/catch_01.png",
     "sprites/catch_02.png",
@@ -65,20 +69,24 @@ if (navBuilder && navLogo) {
     "sprites/catch_05.png",
   ];
 
-  const aboutLink = document.querySelector('.nav-links a[href="#about"]');
-
-  // Normal run speed
+  // Normal patrol speed
   const runSpeed = 15;
   const runFrameDelay = 60;
 
-  // After Clicking
+  // Navigation-click speed
   const navigationRunSpeed = 35;
   const navigationFrameDelay = 25;
 
+  // Jump settings
   const frameDelay = 90;
   const pauseDuration = 2000;
   const jumpDistance = 65;
+  const jumpHeight = 35;
 
+  // Collision settings
+  const edgeMargin = 2;
+
+  // Shared animation state
   let jumpFrameIndex = 0;
   let selectedNavLink = null;
 
@@ -90,6 +98,120 @@ if (navBuilder && navLogo) {
   let activeCarriedText = null;
   let activeHiddenLink = null;
 
+  // Current hacker position in navbar coordinates
+  let positionX = 0;
+  let positionY = 0;
+
+  // Current orientation
+  let facingDirection = 1;
+
+  // Whether the hacker is temporarily positioned on the page
+  let isFollowingText = false;
+
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  /**
+   * Returns the logo's exact center relative to the
+   * hacker's normal absolute-positioned layout.
+   *
+   * The coordinates are recalculated when needed,
+   * so they also work with the stacked mobile navbar.
+   *
+   * @returns {{x: number, y: number}} Logo center.
+   */
+  function getLogoCenterPosition() {
+    const logoRect = navLogo.getBoundingClientRect();
+    const navRect = navbar.getBoundingClientRect();
+
+    return {
+      x:
+        logoRect.left +
+        logoRect.width / 2 -
+        navRect.left -
+        navBuilder.offsetLeft -
+        navBuilder.offsetWidth / 2,
+
+      y:
+        logoRect.top +
+        logoRect.height / 2 -
+        navRect.top -
+        navBuilder.offsetTop -
+        navBuilder.offsetHeight / 2,
+    };
+  }
+
+  /**
+   * Returns the hacker's running level.
+   *
+   * The hacker runs along the navbar's bottom edge.
+   *
+   * @returns {number} Vertical translation.
+   */
+  function getRunningY() {
+    return 0;
+  }
+
+  /**
+   * Returns the horizontal position where the hacker
+   * should collide just before the browser's right edge.
+   *
+   * @returns {number} Collision position.
+   */
+  function getRightEdgePosition() {
+    const navbarRect = navbar.getBoundingClientRect();
+    const browserWidth = document.documentElement.clientWidth;
+
+    return Math.max(
+      0,
+      browserWidth -
+        navbarRect.left -
+        navBuilder.offsetLeft -
+        navBuilder.offsetWidth -
+        edgeMargin,
+    );
+  }
+
+  /**
+   * Updates the hacker's position in the navbar.
+   *
+   * Also stores its coordinates so navigation clicks
+   * can interrupt the patrol without losing position.
+   *
+   * @param {number} x - Horizontal position.
+   * @param {number} y - Vertical position.
+   * @param {number} direction - Facing direction.
+   * @param {number} rotation - Rotation in degrees.
+   * @param {number} scale - Character scale.
+   */
+  function setBuilderPosition(x, y, direction = 1, rotation = 0, scale = 1) {
+    positionX = x;
+    positionY = y;
+    facingDirection = direction;
+
+    navBuilder.style.transform =
+      `translate(${x}px, ${y}px) ` +
+      `rotate(${rotation}deg) ` +
+      `scale(${direction * scale}, ${scale})`;
+
+    navBuilder.dataset.position = String(x);
+  }
+
+  /**
+   * Stops the currently active timer or animation frame.
+   */
+  function stopMotion() {
+    if (activeTimer !== null) {
+      clearTimeout(activeTimer);
+      clearInterval(activeTimer);
+      activeTimer = null;
+    }
+
+    if (activeFrame !== null) {
+      cancelAnimationFrame(activeFrame);
+      activeFrame = null;
+    }
+  }
+
   /**
    * Cancels the current animation and restores any
    * navigation text before starting a new interaction.
@@ -97,12 +219,7 @@ if (navBuilder && navLogo) {
   function cancelCurrentAnimation() {
     animationVersion++;
 
-    clearTimeout(activeTimer);
-    clearInterval(activeTimer);
-    cancelAnimationFrame(activeFrame);
-
-    activeTimer = null;
-    activeFrame = null;
+    stopMotion();
 
     if (activeTextAnimation) {
       activeTextAnimation.cancel();
@@ -125,28 +242,97 @@ if (navBuilder && navLogo) {
     }
 
     selectedNavLink = null;
+
+    navBuilder.style.transformOrigin = "";
   }
 
   /**
-   * Restores the hacker's normal navigation-bar positioning
-   * while preserving its current visible horizontal position.
+   * Restores the hacker's normal navbar positioning
+   * while preserving its current visible coordinates.
+   *
+   * This is used after page-level navigation animations.
    */
   function placeBuilderInNavbar() {
     const builderRect = navBuilder.getBoundingClientRect();
-    const navRect = navBuilder.parentElement.getBoundingClientRect();
+    const navRect = navbar.getBoundingClientRect();
 
+    // Temporarily remove the transform and fixed positioning.
     navBuilder.style.position = "";
     navBuilder.style.left = "";
     navBuilder.style.top = "";
     navBuilder.style.bottom = "";
     navBuilder.style.zIndex = "";
+    navBuilder.style.transform = "";
+    navBuilder.style.transformOrigin = "";
 
-    const position = builderRect.left - navRect.left - navBuilder.offsetLeft;
+    const x = builderRect.left - navRect.left - navBuilder.offsetLeft;
 
-    navBuilder.style.transform = `translateX(${position}px)`;
-    navBuilder.dataset.position = position;
+    const y = builderRect.top - navRect.top - navBuilder.offsetTop;
 
-    return position;
+    setBuilderPosition(x, y, facingDirection);
+
+    isFollowingText = false;
+
+    return { x, y };
+  }
+
+  /**
+   * Returns the hacker to the running level smoothly
+   * while moving toward a navigation link.
+   *
+   * @param {HTMLElement} link - Selected navigation link.
+   * @param {number} version - Current animation version.
+   */
+  function runToNavLink(link, version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
+    const navRect = navbar.getBoundingClientRect();
+    const linkRect = link.getBoundingClientRect();
+
+    const destination =
+      linkRect.left -
+      navRect.left -
+      navBuilder.offsetLeft -
+      navBuilder.offsetWidth +
+      10;
+
+    let x = positionX;
+    let y = positionY;
+    let frameIndex = 0;
+
+    activeTimer = setInterval(() => {
+      if (version !== animationVersion) {
+        return;
+      }
+
+      const distance = destination - x;
+      const direction = distance >= 0 ? 1 : -1;
+
+      const step = Math.min(navigationRunSpeed, Math.abs(distance));
+
+      x += step * direction;
+
+      // Gradually move to the navbar's running level.
+      y += (getRunningY() - y) * 0.35;
+
+      if (Math.abs(y - getRunningY()) < 0.5) {
+        y = getRunningY();
+      }
+
+      navBuilder.src = runFrames[frameIndex];
+      setBuilderPosition(x, y, direction);
+
+      frameIndex = (frameIndex + 1) % runFrames.length;
+
+      if (Math.abs(destination - x) < 0.01) {
+        setBuilderPosition(destination, getRunningY(), direction);
+
+        stopMotion();
+        animateGrab(version);
+      }
+    }, navigationFrameDelay);
   }
 
   /**
@@ -155,13 +341,47 @@ if (navBuilder && navLogo) {
    */
   document.querySelectorAll(".nav-links a").forEach((link) => {
     link.addEventListener("click", () => {
-      cancelCurrentAnimation();
+      if (reducedMotion.matches) {
+        return;
+      }
 
-      const version = animationVersion;
+      // Capture the hacker's current visible position
+      // before cancelling a collision or page animation.
+      const builderRect = navBuilder.getBoundingClientRect();
+
+      cancelCurrentAnimation();
 
       selectedNavLink = link;
 
-      placeBuilderInNavbar();
+      const version = animationVersion;
+
+      // Restore normal navbar positioning.
+      if (isFollowingText) {
+        navBuilder.style.position = "";
+        navBuilder.style.left = "";
+        navBuilder.style.top = "";
+        navBuilder.style.bottom = "";
+        navBuilder.style.zIndex = "";
+        navBuilder.style.transform = "";
+      }
+
+      const navRect = navbar.getBoundingClientRect();
+
+      // Start at the character's actual visible location.
+      const x = builderRect.left - navRect.left - navBuilder.offsetLeft;
+
+      const y = builderRect.top - navRect.top - navBuilder.offsetTop;
+
+      navBuilder.style.position = "";
+      navBuilder.style.left = "";
+      navBuilder.style.top = "";
+      navBuilder.style.bottom = "";
+      navBuilder.style.zIndex = "";
+      navBuilder.style.transformOrigin = "";
+
+      isFollowingText = false;
+
+      setBuilderPosition(x, y, facingDirection);
 
       navBuilder.style.opacity = "1";
 
@@ -174,11 +394,14 @@ if (navBuilder && navLogo) {
    * reaches a selected navigation link.
    */
   function animateGrab(version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
     let frameIndex = 0;
 
     activeTimer = setInterval(() => {
       if (version !== animationVersion) {
-        clearInterval(activeTimer);
         return;
       }
 
@@ -186,12 +409,12 @@ if (navBuilder && navLogo) {
       frameIndex++;
 
       if (frameIndex >= grabFrames.length) {
-        clearInterval(activeTimer);
-        activeTimer = null;
+        stopMotion();
         animateThrow(version);
       }
     }, 150);
   }
+
   /**
    * Plays the throwing animation and temporarily hides
    * the selected navigation link's text.
@@ -205,20 +428,18 @@ if (navBuilder && navLogo) {
 
     activeTimer = setInterval(() => {
       if (version !== animationVersion) {
-        clearInterval(activeTimer);
         return;
       }
 
       navBuilder.src = throwFrames[frameIndex];
-
       frameIndex++;
 
       if (frameIndex >= throwFrames.length) {
-        clearInterval(activeTimer);
-        activeTimer = null;
+        stopMotion();
 
         activeHiddenLink = selectedNavLink;
         activeHiddenLink.style.color = "transparent";
+
         animateFlyingText(version);
       }
     }, 150);
@@ -264,6 +485,7 @@ if (navBuilder && navLogo) {
     activeFlyingText = flyingText;
 
     const targetX = sectionRect.left + sectionRect.width / 2;
+
     const targetY = sectionRect.top + sectionRect.height / 2;
 
     const animation = flyingText.animate(
@@ -273,9 +495,9 @@ if (navBuilder && navLogo) {
           opacity: 1,
         },
         {
-          transform: `translate(${targetX - linkRect.left}px, ${
-            targetY - linkRect.top
-          }px) rotate(360deg)`,
+          transform:
+            `translate(${targetX - linkRect.left}px, ` +
+            `${targetY - linkRect.top}px) rotate(360deg)`,
           opacity: 0,
         },
       ],
@@ -287,13 +509,16 @@ if (navBuilder && navLogo) {
     );
 
     activeTextAnimation = animation;
+
     animateChaseJump(flyingText, animation, version);
 
     animation.addEventListener("finish", () => {
       if (version !== animationVersion) {
         return;
       }
+
       flyingText.remove();
+
       activeTextAnimation = null;
       activeFlyingText = null;
     });
@@ -303,20 +528,27 @@ if (navBuilder && navLogo) {
    * Makes the character follow the flying navigation text
    * toward the selected page section before catching it.
    *
-   * @param flyingText - The animated navigation text.
-   * @param animation - The flying text animation.
-   * @param version - The current animation version.
+   * @param {HTMLElement} flyingText - Animated navigation text.
+   * @param {Animation} animation - Flying text animation.
+   * @param {number} version - Current animation version.
    */
   function animateChaseJump(flyingText, animation, version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
     const builderRect = navBuilder.getBoundingClientRect();
 
-    // Move the character into the page so it can leave the navigation bar.
+    // Move the character into the page so it can
+    // leave the navigation bar.
     navBuilder.style.position = "fixed";
     navBuilder.style.left = `${builderRect.left}px`;
     navBuilder.style.top = `${builderRect.top}px`;
     navBuilder.style.bottom = "auto";
     navBuilder.style.transform = "none";
     navBuilder.style.zIndex = "1001";
+
+    isFollowingText = true;
 
     let frameIndex = 0;
 
@@ -339,11 +571,13 @@ if (navBuilder && navLogo) {
 
       const progress = Math.min((animation.currentTime || 0) / 900, 1);
 
-      const jumpHeight = Math.sin(progress * Math.PI) * 45;
+      const height = Math.sin(progress * Math.PI) * 45;
 
       navBuilder.src = jumpFrames[frameIndex];
+
       navBuilder.style.left = `${textRect.left - navBuilder.offsetWidth / 2}px`;
-      navBuilder.style.top = `${textRect.top - jumpHeight}px`;
+
+      navBuilder.style.top = `${textRect.top - height}px`;
 
       frameIndex = (frameIndex + 1) % jumpFrames.length;
 
@@ -354,41 +588,42 @@ if (navBuilder && navLogo) {
   }
 
   /**
-   * Runs the character back to the navigation logo
-   * after returning the captured navigation text.
+   * Plays the character's catching animation after
+   * the navigation text reaches its destination.
    */
-  function runBackToLogo(version) {
-    const navRect = navBuilder.parentElement.getBoundingClientRect();
-    const logoRect = navLogo.getBoundingClientRect();
+  function animateCatch(version) {
+    if (version !== animationVersion) {
+      return;
+    }
 
-    const destination = logoRect.left - navRect.left + jumpDistance;
+    const section = document.querySelector(
+      selectedNavLink?.getAttribute("href"),
+    );
 
-    // Keep the character at its current visible position.
-    let position = placeBuilderInNavbar();
+    if (section) {
+      section.classList.remove("hacker-section-glow");
+
+      // Restart the CSS glow animation.
+      section.getBoundingClientRect();
+
+      section.classList.add("hacker-section-glow");
+    }
+
     let frameIndex = 0;
 
     activeTimer = setInterval(() => {
       if (version !== animationVersion) {
-        clearInterval(activeTimer);
         return;
       }
-      const direction = destination >= position ? 1 : -1;
 
-      position +=
-        Math.min(runSpeed, Math.abs(destination - position)) * direction;
+      navBuilder.src = catchFrames[frameIndex];
+      frameIndex++;
 
-      navBuilder.src = runFrames[frameIndex];
-      navBuilder.style.transform = `translateX(${position}px) scaleX(${direction})`;
-      navBuilder.dataset.position = position;
-
-      frameIndex = (frameIndex + 1) % runFrames.length;
-
-      if (position === destination) {
-        clearInterval(activeTimer);
-        activeTimer = null;
-        animateReturnJump(version);
+      if (frameIndex >= catchFrames.length) {
+        stopMotion();
+        returnWithText(version);
       }
-    }, runFrameDelay);
+    }, 120);
   }
 
   /**
@@ -423,10 +658,13 @@ if (navBuilder && navLogo) {
 
     const startX = builderRect.left;
     const startY = builderRect.top;
+
     const endX = linkRect.left - navBuilder.offsetWidth / 2;
+
     const endY = linkRect.top;
 
     const duration = 900;
+
     let startTime = null;
     let frameIndex = 0;
 
@@ -446,6 +684,7 @@ if (navBuilder && navLogo) {
       const progress = Math.min((timestamp - startTime) / duration, 1);
 
       const x = startX + (endX - startX) * progress;
+
       const y = startY + (endY - startY) * progress;
 
       navBuilder.src = runFrames[frameIndex];
@@ -454,6 +693,7 @@ if (navBuilder && navLogo) {
       navBuilder.style.transform = "scaleX(-1)";
 
       carriedText.style.left = `${x + navBuilder.offsetWidth / 2}px`;
+
       carriedText.style.top = `${y - 20}px`;
 
       frameIndex = (frameIndex + 1) % runFrames.length;
@@ -462,6 +702,7 @@ if (navBuilder && navLogo) {
         activeFrame = requestAnimationFrame(moveBack);
       } else {
         activeFrame = null;
+
         carriedText.remove();
         activeCarriedText = null;
 
@@ -473,6 +714,72 @@ if (navBuilder && navLogo) {
     }
 
     activeFrame = requestAnimationFrame(moveBack);
+  }
+
+  /**
+   * Runs the character back toward the logo after
+   * returning the captured navigation text.
+   */
+  function runBackToLogo(version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
+    // Preserve its visible position when leaving fixed mode.
+    placeBuilderInNavbar();
+
+    runBackToLogoPosition(version);
+  }
+
+  /**
+   * Shared return movement used after both the collision
+   * and the navigation-click animations.
+   *
+   * @param {number} version - Current animation version.
+   */
+  function runBackToLogoPosition(version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
+    let frameIndex = 0;
+
+    activeTimer = setInterval(() => {
+      if (version !== animationVersion) {
+        return;
+      }
+
+      // Recalculate destination for responsive layouts.
+      const destination = getLogoCenterPosition().x + jumpDistance;
+
+      const distance = destination - positionX;
+      const direction = distance >= 0 ? 1 : -1;
+
+      const step = Math.min(runSpeed, Math.abs(distance));
+
+      const x = positionX + step * direction;
+
+      // Smoothly return to the running level.
+      let y = positionY + (getRunningY() - positionY) * 0.35;
+
+      if (Math.abs(y - getRunningY()) < 0.5) {
+        y = getRunningY();
+      }
+
+      navBuilder.src = runFrames[frameIndex];
+
+      setBuilderPosition(x, y, direction);
+
+      frameIndex = (frameIndex + 1) % runFrames.length;
+
+      if (
+        Math.abs(destination - positionX) < 0.01 &&
+        Math.abs(positionY - getRunningY()) < 0.5
+      ) {
+        stopMotion();
+        animateReturnJump(version);
+      }
+    }, runFrameDelay);
   }
 
   /**
@@ -495,199 +802,26 @@ if (navBuilder && navLogo) {
 
     navBuilder.dataset.position = "";
 
+    isFollowingText = false;
     selectedNavLink = null;
+
+    stopMotion();
 
     activeTimer = setTimeout(() => {
       if (version !== animationVersion) {
         return;
       }
+
       activeTimer = null;
       jumpFrameIndex = 0;
+
       animateJump(version);
     }, pauseDuration);
   }
 
   /**
-   * Plays the character's catching animation after
-   * the navigation text reaches its destination.
-   */
-  function animateCatch(version) {
-    const section = document.querySelector(
-      selectedNavLink?.getAttribute("href"),
-    );
-
-    if (section && version === animationVersion) {
-      section.classList.remove("hacker-section-glow");
-      section.getBoundingClientRect();
-      section.classList.add("hacker-section-glow");
-    }
-    let frameIndex = 0;
-
-    activeTimer = setInterval(() => {
-      if (version !== animationVersion) {
-        clearInterval(activeTimer);
-        return;
-      }
-      navBuilder.src = catchFrames[frameIndex];
-
-      frameIndex++;
-
-      if (frameIndex >= catchFrames.length) {
-        clearInterval(activeTimer);
-        activeTimer = null;
-        returnWithText(version);
-      }
-    }, 120);
-  }
-
-  /**
-   * Runs the character toward the selected navigation link.
-   *
-   * @param  link - The navigation link that was clicked.
-   * @param version - The current animation version.
-   */
-  function runToNavLink(link, version) {
-    const navRect = navBuilder.parentElement.getBoundingClientRect();
-    const linkRect = link.getBoundingClientRect();
-
-    const destination =
-      linkRect.left - navRect.left - navBuilder.offsetWidth + 10;
-
-    let position = Number.parseFloat(navBuilder.dataset.position);
-
-    let frameIndex = 0;
-
-    activeTimer = setInterval(() => {
-      if (version !== animationVersion) {
-        clearInterval(activeTimer);
-        return;
-      }
-
-      const direction = destination >= position ? 1 : -1;
-
-      position +=
-        Math.min(navigationRunSpeed, Math.abs(destination - position)) *
-        direction;
-
-      navBuilder.src = runFrames[frameIndex];
-      navBuilder.style.transform = `translateX(${position}px) scaleX(${direction})`;
-
-      navBuilder.dataset.position = position;
-
-      frameIndex = (frameIndex + 1) % runFrames.length;
-
-      if (position === destination) {
-        clearInterval(activeTimer);
-        activeTimer = null;
-        animateGrab(version);
-      }
-    }, navigationFrameDelay);
-  }
-
-  /**
-   * Runs the character toward the About link and back
-   * to its starting position.
-   */
-  function animateRun(version) {
-    if (!aboutLink || version !== animationVersion) {
-      return;
-    }
-
-    const navRect = navBuilder.parentElement.getBoundingClientRect();
-    const aboutRect = aboutLink.getBoundingClientRect();
-
-    const logoRect = navLogo.getBoundingClientRect();
-    const startPosition = logoRect.left - navRect.left + jumpDistance;
-    const destination = aboutRect.left - navRect.left - 48;
-
-    let position = startPosition;
-    let direction = 1;
-    let frameIndex = 0;
-
-    activeTimer = setInterval(() => {
-      if (version !== animationVersion) {
-        clearInterval(activeTimer);
-        return;
-      }
-
-      position += runSpeed * direction;
-
-      if (position >= destination) {
-        position = destination;
-        direction = -1;
-      }
-
-      if (position <= startPosition && direction === -1) {
-        clearInterval(activeTimer);
-        activeTimer = null;
-        animateReturnJump(version);
-        return;
-      }
-
-      navBuilder.src = runFrames[frameIndex];
-      navBuilder.style.transform = `translateX(${position}px) scaleX(${direction})`;
-      navBuilder.dataset.position = position;
-
-      frameIndex = (frameIndex + 1) % runFrames.length;
-    }, runFrameDelay);
-  }
-
-  /**
-   * Jumps back into the navigation logo and restarts
-   * the patrol after a short pause.
-   */
-  function animateReturnJump(version) {
-    if (version !== animationVersion) {
-      return;
-    }
-
-    const logoRect = navLogo.getBoundingClientRect();
-    const navRect = navBuilder.parentElement.getBoundingClientRect();
-
-    const logoPosition = logoRect.left - navRect.left;
-    const startPosition = logoPosition + jumpDistance;
-
-    let frameIndex = 0;
-
-    activeTimer = setInterval(() => {
-      if (version !== animationVersion) {
-        clearInterval(activeTimer);
-        return;
-      }
-
-      const progress = frameIndex / (jumpFrames.length - 1);
-
-      const position = startPosition - progress * (jumpDistance + 45);
-      const height = Math.sin(progress * Math.PI) * 35;
-
-      navBuilder.src = jumpFrames[frameIndex];
-      navBuilder.style.transform = `translate(${position}px, ${-height}px) scaleX(-1)`;
-
-      frameIndex++;
-
-      if (frameIndex >= jumpFrames.length) {
-        clearInterval(activeTimer);
-        activeTimer = null;
-
-        navBuilder.style.opacity = "0";
-        selectedNavLink = null;
-
-        activeTimer = setTimeout(() => {
-          if (version !== animationVersion) {
-            return;
-          }
-
-          activeTimer = null;
-          jumpFrameIndex = 0;
-          animateJump(version);
-        }, pauseDuration);
-      }
-    }, frameDelay);
-  }
-
-  /**
-   * Displays the next jumping frame as the character
-   * moves away from the navigation logo.
+   * Jumps out of the exact center of the navigation logo
+   * and lands on the navbar's running level.
    */
   function animateJump(version) {
     if (version !== animationVersion) {
@@ -699,31 +833,271 @@ if (navBuilder && navLogo) {
       return;
     }
 
-    const logoRect = navLogo.getBoundingClientRect();
-    const navRect = navBuilder.parentElement.getBoundingClientRect();
+    const logo = getLogoCenterPosition();
 
-    const startX = logoRect.left - navRect.left;
     const progress = jumpFrameIndex / (jumpFrames.length - 1);
 
-    const horizontalMovement = progress * 65;
-    const verticalMovement = Math.sin(progress * Math.PI) * 35;
+    const x = logo.x + progress * jumpDistance;
+
+    const y =
+      logo.y +
+      (getRunningY() - logo.y) * progress -
+      Math.sin(progress * Math.PI) * jumpHeight;
 
     navBuilder.src = jumpFrames[jumpFrameIndex];
     navBuilder.style.opacity = "1";
-    navBuilder.style.transform = `translate(
-      ${startX + horizontalMovement}px,
-      ${-verticalMovement}px
-    )`;
 
-    navBuilder.dataset.position = startX + horizontalMovement;
+    setBuilderPosition(x, y, 1);
 
     jumpFrameIndex++;
+
     activeTimer = setTimeout(() => {
+      if (version !== animationVersion) {
+        return;
+      }
+
       activeTimer = null;
       animateJump(version);
     }, frameDelay);
   }
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+
+  /**
+   * Runs across the navbar until the hacker reaches
+   * the collision point just before its right edge.
+   */
+  function animateRun(version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
+    let frameIndex = 0;
+
+    activeTimer = setInterval(() => {
+      if (version !== animationVersion) {
+        return;
+      }
+
+      const destination = getRightEdgePosition();
+
+      const x = Math.min(positionX + runSpeed, destination);
+
+      navBuilder.src = runFrames[frameIndex];
+
+      setBuilderPosition(x, getRunningY(), 1);
+
+      frameIndex = (frameIndex + 1) % runFrames.length;
+
+      if (x >= destination) {
+        stopMotion();
+        animateEdgeCollision(version);
+      }
+    }, runFrameDelay);
+  }
+
+  /**
+   * Plays the wall collision, backward jump,
+   * sitting pose, and recovery.
+   *
+   * The hacker continues facing the wall while
+   * jumping backward, then turns toward the logo.
+   *
+   * Navigation clicks can interrupt this animation.
+   */
+  function animateEdgeCollision(version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
+    const edgePosition = positionX;
+    const landingPosition = Math.max(0, edgePosition - jumpDistance);
+
+    const runningY = getRunningY();
+
+    // Jump backward while continuing to face the wall.
+    const stages = [
+      {
+        frame: jumpFrames[1],
+        duration: 80,
+        x: edgePosition,
+        y: runningY,
+      },
+      {
+        frame: jumpFrames[2],
+        duration: 80,
+        x: edgePosition - jumpDistance * 0.3,
+        y: runningY - jumpHeight,
+      },
+      {
+        frame: jumpFrames[3],
+        duration: 80,
+        x: edgePosition - jumpDistance * 0.7,
+        y: runningY - jumpHeight,
+      },
+      {
+        frame: jumpFrames[0],
+        duration: 600,
+        x: landingPosition,
+        y: runningY,
+      },
+      {
+        frame: jumpFrames[1],
+        duration: 100,
+        x: landingPosition,
+        y: runningY,
+      },
+    ];
+
+    let stageIndex = 0;
+
+    /**
+     * Advances through the backward jump and recovery sprites.
+     */
+    function playCollisionStage() {
+      if (version !== animationVersion) {
+        return;
+      }
+
+      if (stageIndex >= stages.length) {
+        activeTimer = null;
+
+        positionX = landingPosition;
+        positionY = runningY;
+
+        // Turn left only after landing and getting up.
+        setBuilderPosition(positionX, positionY, -1, 0, 1);
+
+        // Run toward the logo using the existing animation.
+        runBackFromEdge(version);
+        return;
+      }
+
+      const stage = stages[stageIndex];
+
+      navBuilder.src = stage.frame;
+
+      // Face right throughout the backward jump.
+      setBuilderPosition(stage.x, stage.y, 1, 0, 1);
+
+      positionX = stage.x;
+      positionY = stage.y;
+
+      stageIndex++;
+
+      activeTimer = setTimeout(playCollisionStage, stage.duration);
+    }
+
+    playCollisionStage();
+  }
+
+  /**
+   * Runs back toward the logo after recovering
+   * from the collision.
+   *
+   * Navigation clicks can interrupt this movement.
+   */
+  function runBackFromEdge(version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
+    runBackToLogoPosition(version);
+  }
+
+  /**
+   * Jumps back into the exact center of the logo
+   * and restarts the patrol after a short pause.
+   */
+  function animateReturnJump(version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
+    let frameIndex = 0;
+
+    activeTimer = setInterval(() => {
+      if (version !== animationVersion) {
+        return;
+      }
+
+      const logo = getLogoCenterPosition();
+
+      const progress = frameIndex / (jumpFrames.length - 1);
+
+      const startX = logo.x + jumpDistance;
+      const startY = getRunningY();
+
+      const x = startX + (logo.x - startX) * progress;
+
+      const y =
+        startY +
+        (logo.y - startY) * progress -
+        Math.sin(progress * Math.PI) * jumpHeight;
+
+      navBuilder.src = jumpFrames[frameIndex];
+
+      setBuilderPosition(x, y, -1);
+
+      frameIndex++;
+
+      if (frameIndex >= jumpFrames.length) {
+        stopMotion();
+
+        // Final position is the exact center of the logo.
+        setBuilderPosition(logo.x, logo.y, -1);
+
+        navBuilder.style.opacity = "0";
+        selectedNavLink = null;
+
+        activeTimer = setTimeout(() => {
+          if (version !== animationVersion) {
+            return;
+          }
+
+          activeTimer = null;
+          jumpFrameIndex = 0;
+
+          animateJump(version);
+        }, pauseDuration);
+      }
+    }, frameDelay);
+  }
+
+  /**
+   * Recalculates the character's location when the
+   * viewport changes size or orientation.
+   *
+   * A resize restarts the patrol from the logo so the
+   * character cannot become stuck outside the navbar.
+   */
+  function handleResize() {
+    if (reducedMotion.matches) {
+      return;
+    }
+
+    cancelCurrentAnimation();
+
+    isFollowingText = false;
+
+    navBuilder.style.position = "";
+    navBuilder.style.left = "";
+    navBuilder.style.top = "";
+    navBuilder.style.bottom = "";
+    navBuilder.style.zIndex = "";
+    navBuilder.style.transform = "";
+    navBuilder.style.opacity = "0";
+
+    jumpFrameIndex = 0;
+
+    animateJump(animationVersion);
+  }
+
+  window.addEventListener("resize", handleResize);
+
+  /**
+   * Start the automatic patrol unless the user
+   * has requested reduced motion.
+   */
+  if (!reducedMotion.matches) {
     animateJump(animationVersion);
   }
 }
