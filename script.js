@@ -111,6 +111,21 @@ if (navBuilder && navLogo) {
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   /**
+   * Applies the persistent neon effect to a navigation link.
+   *
+   * The effect remains until the page is refreshed.
+   *
+   * @param {HTMLElement} link - Navigation link to illuminate.
+   */
+  function activateNeonLink(link) {
+    if (!link) {
+      return;
+    }
+
+    link.classList.add("nav-neon-active");
+  }
+
+  /**
    * Returns the logo's exact center relative to the
    * hacker's normal absolute-positioned layout.
    *
@@ -437,6 +452,9 @@ if (navBuilder && navLogo) {
       if (frameIndex >= throwFrames.length) {
         stopMotion();
 
+        // Transform the selected word into neon pink when thrown.
+        activateNeonLink(selectedNavLink);
+
         activeHiddenLink = selectedNavLink;
         activeHiddenLink.style.color = "transparent";
 
@@ -470,12 +488,13 @@ if (navBuilder && navLogo) {
     const flyingText = document.createElement("span");
     flyingText.textContent = link.textContent.trim();
 
+    flyingText.classList.add("hacker-neon-text");
+
     Object.assign(flyingText.style, {
       position: "fixed",
       left: `${linkRect.left}px`,
       top: `${linkRect.top}px`,
       font: window.getComputedStyle(link).font,
-      color: "#a855f7",
       whiteSpace: "nowrap",
       pointerEvents: "none",
       zIndex: "1000",
@@ -641,12 +660,12 @@ if (navBuilder && navLogo) {
 
     const carriedText = document.createElement("span");
     carriedText.textContent = link.textContent.trim();
+    carriedText.classList.add("hacker-neon-text");
 
     Object.assign(carriedText.style, {
       position: "fixed",
       left: `${builderRect.left + navBuilder.offsetWidth / 2}px`,
       top: `${builderRect.top - 20}px`,
-      color: "#a855f7",
       font: window.getComputedStyle(link).font,
       whiteSpace: "nowrap",
       pointerEvents: "none",
