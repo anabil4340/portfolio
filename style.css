@@ -203,6 +203,42 @@ header {
     0 0 18px rgb(168 85 247 / 55%);
 }
 
+/* Hollow neon particles following thrown navigation text. */
+.hacker-neon-spark {
+  position: fixed;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #ff78e9;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    0 0 5px #ff78e9,
+    0 0 10px rgb(168 85 247 / 55%);
+  pointer-events: none;
+  z-index: 999;
+  animation: hacker-spark-fade 450ms ease-out forwards;
+}
+
+@keyframes hacker-spark-fade {
+  from {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+
+/* Respect visitors who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .hacker-neon-spark {
+    animation: none;
+    display: none;
+  }
+}
+
 /* Main page container */
 main {
   max-width: 1100px;

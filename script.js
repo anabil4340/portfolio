@@ -126,6 +126,41 @@ if (navBuilder && navLogo) {
   }
 
   /**
+   * Returns a horizontal position that keeps the
+   * flying word fully inside the browser viewport.
+   *
+   * @param {number} x - Requested horizontal position.
+   * @param {number} width - Width of the flying word.
+   * @returns {number} Safe horizontal position.
+   */
+  function clampFlyingTextX(x, width) {
+    const viewportWidth = document.documentElement.clientWidth;
+
+    return Math.max(0, Math.min(x, viewportWidth - width));
+  }
+
+  /**
+   * Creates a short-lived hollow neon spark behind
+   * the flying navigation word.
+   *
+   * @param {number} x - Horizontal spark position.
+   * @param {number} y - Vertical spark position.
+   */
+  function createNeonSpark(x, y) {
+    const spark = document.createElement("span");
+    spark.className = "hacker-neon-spark";
+
+    spark.style.left = `${x}px`;
+    spark.style.top = `${y}px`;
+
+    document.body.appendChild(spark);
+
+    spark.addEventListener("animationend", () => spark.remove(), {
+      once: true,
+    });
+  }
+
+  /**
    * Returns the logo's exact center relative to the
    * hacker's normal absolute-positioned layout.
    *
@@ -464,8 +499,10 @@ if (navBuilder && navLogo) {
   }
 
   /**
-   * Animates the selected navigation text toward its page section
-   * and restores the original navigation link afterward.
+   * Throws the neon navigation text toward a random
+   * browser wall, bounces it, and sends it to its section.
+   *
+   * The word remains within the viewport horizontally.
    */
   function animateFlyingText(version) {
     if (!selectedNavLink || version !== animationVersion) {
@@ -487,7 +524,6 @@ if (navBuilder && navLogo) {
 
     const flyingText = document.createElement("span");
     flyingText.textContent = link.textContent.trim();
-
     flyingText.classList.add("hacker-neon-text");
 
     Object.assign(flyingText.style, {
@@ -503,31 +539,88 @@ if (navBuilder && navLogo) {
     document.body.appendChild(flyingText);
     activeFlyingText = flyingText;
 
-    const targetX = sectionRect.left + sectionRect.width / 2;
+    const textWidth = flyingText.getBoundingClientRect().width;
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = window.innerHeight;
 
-    const targetY = sectionRect.top + sectionRect.height / 2;
+    const startX = clampFlyingTextX(linkRect.left, textWidth);
+    const startY = linkRect.top;
+
+    const bounceRight = Math.random() < 0.5;
+
+    const wallX = bounceRight ? Math.max(0, viewportWidth - textWidth - 2) : 2;
+
+    const targetX = clampFlyingTextX(
+      sectionRect.left + sectionRect.width / 2 - textWidth / 2,
+      textWidth,
+    );
+
+    const targetY = Math.max(
+      0,
+      Math.min(
+        sectionRect.top + sectionRect.height / 2,
+        viewportHeight - flyingText.offsetHeight,
+      ),
+    );
+
+    const duration = 1100;
 
     const animation = flyingText.animate(
       [
         {
-          transform: "translate(0, 0) rotate(0deg)",
+          left: `${startX}px`,
+          top: `${startY}px`,
           opacity: 1,
+          offset: 0,
         },
         {
-          transform:
-            `translate(${targetX - linkRect.left}px, ` +
-            `${targetY - linkRect.top}px) rotate(360deg)`,
-          opacity: 0,
+          left: `${wallX}px`,
+          top: `${startY + (targetY - startY) * 0.4}px`,
+          opacity: 1,
+          offset: 0.45,
+        },
+        {
+          left: `${targetX}px`,
+          top: `${targetY}px`,
+          opacity: 1,
+          offset: 1,
         },
       ],
       {
-        duration: 900,
-        easing: "ease-in-out",
+        duration,
+        easing: "linear",
         fill: "forwards",
       },
     );
 
     activeTextAnimation = animation;
+
+    let lastSparkTime = 0;
+
+    /**
+     * Generates sparks while the word is moving.
+     */
+    function updateSparks(timestamp) {
+      if (version !== animationVersion) {
+        return;
+      }
+
+      if (animation.playState === "finished") {
+        return;
+      }
+
+      if (timestamp - lastSparkTime > 65) {
+        const rect = flyingText.getBoundingClientRect();
+
+        createNeonSpark(rect.left + rect.width / 2, rect.top + rect.height / 2);
+
+        lastSparkTime = timestamp;
+      }
+
+      requestAnimationFrame(updateSparks);
+    }
+
+    requestAnimationFrame(updateSparks);
 
     animateChaseJump(flyingText, animation, version);
 
@@ -588,7 +681,7 @@ if (navBuilder && navLogo) {
 
       const textRect = flyingText.getBoundingClientRect();
 
-      const progress = Math.min((animation.currentTime || 0) / 900, 1);
+      const progress = Math.min((animation.currentTime || 0) / 1100, 1);
 
       const height = Math.sin(progress * Math.PI) * 45;
 
