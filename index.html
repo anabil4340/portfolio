@@ -1,0 +1,280 @@
+<!--
+  Author: Abdur Nabil
+  Project: Software Developer Portfolio
+  Description: Personal portfolio showcasing education, technical skills,
+               projects, resume, and contact information.
+  Date: October 2026
+-->
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Abdur Nabil's software development portfolio."
+    />
+    <title>Abdur Nabil | Software Developer</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="script.js" defer></script>
+  </head>
+
+  <body>
+    <!-- Header and navigation -->
+    <header>
+      <nav class="navbar" aria-label="Main navigation">
+        <a href="#home" class="logo">
+          <!---Personal Logo-->
+          <img src="logo.png" alt="Abdur Nabil logo" id="mascot-logo" />
+          <span>Abdur Nabil</span>
+        </a>
+        <!-- Animated navigation character -->
+        <img
+          id="nav-builder"
+          class="nav-builder"
+          src="sprites/run_01.png"
+          alt=""
+          aria-hidden="true"
+        />
+        <ul class="nav-links">
+          <li><a href="#about">About</a></li>
+          <li><a href="#education">Education</a></li>
+          <li><a href="#skills">Skills</a></li>
+          <li><a href="#projects">Projects</a></li>
+          <li><a href="#resume">Resume</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- Main portfolio content -->
+    <main>
+      <!-- Home -->
+      <section id="home" class="hero">
+        <!-- Floating hero logo -->
+        <img src="logo.png" alt="Abdur Nabil mascot" class="hero-logo" />
+        <p class="eyebrow">SOFTWARE DEVELOPMENT STUDENT</p>
+
+        <h1>Hello, I'm <span>Abdur Nabil</span>.</h1>
+
+        <h2>Building practical solutions through code.</h2>
+
+        <p>
+          I'm a Software Development student at Mohawk College, developing my
+          skills in Java, web technologies, and application development through
+          coursework and projects.
+        </p>
+
+        <a href="#projects" class="button">Explore My Projects</a>
+      </section>
+
+      <!-- About -->
+      <section id="about" class="section">
+        <p class="eyebrow">ABOUT ME</p>
+        <h2>A Little About Me</h2>
+
+        <p>
+          I'm a Software Development student at Mohawk College in Hamilton,
+          Ontario, with an interest in building practical software solutions and
+          solving technical problems. Through coursework and personal projects,
+          I'm developing my skills in programming, web development, and
+          application design. Beyond software development, I'm interested in
+          cybersecurity and ethical hacking. I use
+          <a
+            href="https://tryhackme.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >TryHackMe</a
+          >
+          to practice security concepts in a safe, legal environment and
+          strengthen my understanding of application security. I'm always
+          looking for opportunities to learn new technologies, improve my
+          skills, and build useful, reliable applications.
+        </p>
+      </section>
+
+      <!-- Education -->
+      <section id="education" class="section">
+        <p class="eyebrow">MY BACKGROUND</p>
+        <h2>Education</h2>
+
+        <div class="education-grid">
+          <article class="content-card">
+            <h3>Mohawk College</h3>
+            <p class="card-title">Software Development — Advanced Diploma</p>
+            <p>Hamilton, Ontario</p>
+            <p class="muted">May 2025 – Present</p>
+          </article>
+
+          <article class="content-card">
+            <h3>Mohawk College</h3>
+            <p class="card-title">Personal Support Worker Certificate</p>
+            <p>Hamilton, Ontario</p>
+            <p class="muted">May 2021 – February 2022</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Technical skills -->
+      <section id="skills" class="section">
+        <p class="eyebrow">WHAT I WORK WITH</p>
+        <h2>Technical Skills</h2>
+
+        <div class="skills-grid">
+          <article class="content-card">
+            <h3>Programming Languages</h3>
+            <p>Java, C#, JavaScript, Python, PHP</p>
+          </article>
+
+          <article class="content-card">
+            <h3>Web Development</h3>
+            <p>HTML, CSS, Bootstrap, React, Thymeleaf</p>
+          </article>
+
+          <article class="content-card">
+            <h3>Frameworks and Technologies</h3>
+            <p>.NET, Spring Boot, Node.js</p>
+          </article>
+
+          <article class="content-card">
+            <h3>Tools and Core Concepts</h3>
+            <p>
+              Git, GitHub, IntelliJ IDEA, VS Code, Object-Oriented Programming,
+              Data Structures, Database Fundamentals
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Projects -->
+      <section id="projects" class="section">
+        <p class="eyebrow">WHAT I'VE BEEN WORKING ON</p>
+        <h2>Projects</h2>
+
+        <div class="projects-grid">
+          <article class="content-card project-card">
+            <p class="eyebrow">JAVA · SPRING BOOT</p>
+            <h3>StockWatch</h3>
+            <img
+              src="Stockwatch.png"
+              alt="Screenshot of the StockWatch inventory management application"
+              class="project-image"
+            />
+            <p>
+              An inventory management application designed to help track
+              products, monitor stock levels, and identify items that may need
+              restocking.
+            </p>
+            <p>
+              <a
+                href="https://stockwatch-gtht.onrender.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Live Demo
+              </a>
+            </p>
+            <p class="muted">Technologies: Java, Spring Boot, Thymeleaf</p>
+          </article>
+
+          <article class="content-card project-card">
+            <p class="eyebrow">UI/UX DESIGN</p>
+            <h3>KeepItTogether</h3>
+            <img
+              src="KeepItTogether.png"
+              alt="Screenshot of the KeepItTogether student planner project"
+              class="project-image"
+            />
+            <p>
+              A student planner project focused on organizing courses,
+              assignments, deadlines, and reminders. Included prototyping and
+              usability testing.
+            </p>
+            <p class="muted">Tools: Figma, user research, usability testing</p>
+            <a
+              href="https://asset-navy-32236032.figma.site/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View Figma Project →
+            </a>
+          </article>
+        </div>
+      </section>
+
+      <!-- Resume -->
+      <section id="resume" class="section">
+        <p class="eyebrow">MY EXPERIENCE</p>
+        <h2>Resume</h2>
+
+        <div class="content-card">
+          <p>
+            View my resume for more information about my education, technical
+            skills, and experience.
+          </p>
+          <a href="resume.pdf" class="button" target="_blank">
+            View My Resume
+          </a>
+        </div>
+      </section>
+
+      <!-- Contact information -->
+      <section id="contact" class="section">
+        <p class="eyebrow">LET'S CONNECT</p>
+        <h2>Contact</h2>
+
+        <div class="content-card">
+          <p>
+            Feel free to contact me about opportunities, projects, or
+            professional connections.
+          </p>
+
+          <p>
+            Email:
+            <a href="mailto:abdur.nabil@mohawkcollege.ca">
+              abdur.nabil@mohawkcollege.ca
+            </a>
+          </p>
+
+          <p>
+            GitHub:
+            <a
+              href="https://github.com/anabil4340"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              github.com/anabil4340
+            </a>
+          </p>
+
+          <p>
+            LinkedIn:
+            <a
+              href="https://www.linkedin.com/in/abdur-n-91359b235"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View LinkedIn Profile
+            </a>
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+      <p>&copy; 2026 Abdur Nabil. Software Developer Portfolio.</p>
+    </footer>
+
+    <!-- Back-to-top button -->
+    <button
+      id="back-to-top"
+      class="back-to-top"
+      type="button"
+      aria-label="Back to top"
+    >
+      ↑
+    </button>
+  </body>
+</html>

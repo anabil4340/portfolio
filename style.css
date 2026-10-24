@@ -1,0 +1,494 @@
+/*
+  Author: Abdur Nabil
+  Project: Software Developer Portfolio
+  Description: Styles the layout, colours, typography, and responsive
+               design of the portfolio website.
+  Date: October 2026
+*/
+
+/* Theme colours */
+:root {
+  --background: #08080c;
+  --surface: #12111a;
+  --surface-light: #1d1929;
+  --text: #f5f3ff;
+  --muted: #b4aec5;
+  --accent: #a855f7;
+  --border: #30243f;
+}
+
+/* Global styles and reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 90px;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--background);
+  color: var(--text);
+  line-height: 1.7;
+}
+
+/* Links and keyboard accessibility */
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* Navigation bar */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(11, 17, 32, 0.95);
+  border-bottom: 1px solid var(--border);
+}
+
+.navbar {
+  position: relative;
+  max-width: 1100px;
+  min-height: 76px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Navigation logo image */
+#mascot-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition:
+    transform 0.3s ease,
+    filter 0.3s ease;
+}
+
+/* Logo hover effect */
+.logo:hover #mascot-logo {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 10px var(--accent));
+}
+
+/* Logo glitch animation */
+@keyframes logo-glitch {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1.1);
+    filter: drop-shadow(0 0 10px var(--accent));
+  }
+
+  20% {
+    transform: translate(-2px, 1px) scale(1.1);
+    filter: drop-shadow(3px 0 4px #00ff88);
+  }
+
+  40% {
+    transform: translate(2px, -1px) scale(1.1);
+    filter: drop-shadow(-3px 0 4px var(--accent));
+  }
+
+  60% {
+    transform: translate(-1px, -2px) scale(1.1);
+  }
+
+  80% {
+    transform: translate(1px, 2px) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .logo:hover #mascot-logo {
+    animation: logo-glitch 0.4s steps(2, end);
+  }
+}
+
+.logo span {
+  color: var(--accent);
+}
+
+/* Animated navigation character */
+.nav-builder {
+  opacity: 0;
+  will-change: transform;
+  position: absolute;
+  left: 24px;
+  bottom: 0;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 20px;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.nav-links a:hover {
+  color: var(--accent);
+}
+
+/* Main page container */
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Home and introduction section */
+.hero {
+  min-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 90px 0;
+}
+
+/* Floating hero logo */
+.hero-logo {
+  display: block;
+  width: 320px;
+  height: 320px;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  align-self: center;
+  margin-bottom: 36px;
+  filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.4));
+  animation: hero-float 3s ease-in-out infinite;
+}
+
+/* Hero logo floating animation */
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-18px);
+  }
+}
+
+/* Floating hero logo hover effect */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-logo:hover {
+    animation:
+      hero-float 3s ease-in-out infinite,
+      hero-glitch 0.4s steps(2, end);
+  }
+}
+
+/* Hero logo glitch animation */
+@keyframes hero-glitch {
+  0%,
+  100% {
+    translate: 0 0;
+    filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.4));
+  }
+
+  20% {
+    translate: -5px 2px;
+    filter: drop-shadow(5px 0 6px #00ff88);
+  }
+
+  40% {
+    translate: 5px -3px;
+    filter: drop-shadow(-5px 0 6px var(--accent));
+  }
+
+  60% {
+    translate: -4px -2px;
+    filter: drop-shadow(4px 0 8px #00ff88);
+  }
+
+  80% {
+    translate: 4px 3px;
+    filter: drop-shadow(-4px 0 8px var(--accent));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-logo {
+    animation: none;
+  }
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.hero h1 {
+  max-width: 850px;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  line-height: 1.15;
+  margin-bottom: 20px;
+}
+
+.hero h1 span {
+  color: var(--accent);
+}
+
+.hero h2 {
+  color: var(--muted);
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 400;
+  margin-bottom: 20px;
+}
+
+.hero > p:not(.eyebrow) {
+  max-width: 700px;
+  color: var(--muted);
+  margin-bottom: 28px;
+}
+
+/* Buttons and hover effects */
+.button {
+  display: inline-block;
+  padding: 12px 22px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--background);
+  font-weight: 700;
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+
+.button:hover {
+  background: transparent;
+  color: var(--accent);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+/* Shared content section layout */
+.section {
+  padding: 80px 0;
+  border-top: 1px solid var(--border);
+}
+
+.section > h2 {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  margin-bottom: 24px;
+}
+
+.section > p:not(.eyebrow) {
+  max-width: 800px;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+/* Education, skills, and project card grids */
+.education-grid,
+.skills-grid,
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+/* Shared card appearance */
+.content-card {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.content-card h3 {
+  font-size: 1.15rem;
+  margin-bottom: 10px;
+}
+
+.content-card p {
+  color: var(--muted);
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+
+.content-card p:last-child {
+  margin-bottom: 0;
+}
+
+.content-card .eyebrow {
+  color: var(--accent);
+}
+
+.card-title {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.muted {
+  font-size: 0.9rem;
+}
+
+/* Project card layout */
+.project-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Adds spacing above links in project cards */
+.project-card a {
+  margin-top: 12px;
+}
+
+/* Project screenshot styling*/
+.project-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 12px 0 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* Contact section text wrapping */
+#contact .content-card {
+  overflow-wrap: anywhere;
+}
+
+/* Footer styling */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 24px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Responsive layout for mobile devices */
+@media (max-width: 700px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .nav-links {
+    justify-content: flex-start;
+    gap: 12px 18px;
+  }
+
+  .hero {
+    min-height: auto;
+    padding: 80px 0;
+  }
+
+  .section {
+    padding: 60px 0;
+  }
+
+  .education-grid,
+  .skills-grid,
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Back-to-top button */
+.back-to-top {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--background);
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition:
+    opacity 0.2s,
+    transform 0.2s,
+    visibility 0.2s;
+}
+
+/* Show the button when scrolling down */
+.back-to-top.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Button hover effect */
+.back-to-top:hover {
+  background: transparent;
+  color: var(--accent);
+}
+
+/* Pink glow when the mini hacker reaches a section */
+.hacker-section-glow {
+  animation: hackerSectionGlow 1.8s ease-in-out;
+}
+
+@keyframes hackerSectionGlow {
+  0% {
+    outline: 3px solid transparent;
+    outline-offset: 20px;
+  }
+
+  40% {
+    outline: 3px solid rgba(236, 72, 153, 0.8);
+    outline-offset: 20px;
+  }
+
+  100% {
+    outline: 3px solid transparent;
+    outline-offset: 20px;
+  }
+}
