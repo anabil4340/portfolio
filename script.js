@@ -5,6 +5,24 @@
   Date: October 2026
 */
 
+/* Start at the top of the page after refreshing. */
+if ("scrollRestoration" in history) {
+  history.scrollRestoration = "manual";
+}
+
+window.addEventListener("load", function () {
+  // Only reset scrolling when the page is reloaded.
+  const navigationEntry = performance.getEntriesByType("navigation")[0];
+
+  if (navigationEntry?.type === "reload") {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  }
+});
+
 /* Show a button to return to the top of the page. */
 const backToTop = document.getElementById("back-to-top");
 
