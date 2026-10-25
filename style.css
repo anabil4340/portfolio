@@ -203,6 +203,19 @@ header {
     0 0 18px rgb(168 85 247 / 55%);
 }
 
+/* Captured neon text held by the mini hacker. */
+.hacker-carried-text {
+  display: inline-block;
+  padding: 2px 5px;
+  border: 1px solid rgb(255 120 233 / 55%);
+  border-radius: 5px;
+  background: rgb(30 10 50 / 12%);
+  box-shadow:
+    0 0 6px rgb(255 120 233 / 35%),
+    inset 0 0 5px rgb(168 85 247 / 15%);
+  pointer-events: none;
+}
+
 /* Hollow neon particles following thrown navigation text. */
 .hacker-neon-spark {
   position: fixed;
@@ -231,9 +244,75 @@ header {
   }
 }
 
+/* Hollow cyberpunk power-up aura around the mini hacker. */
+.hacker-power-aura {
+  position: fixed;
+  border: 2px solid rgb(218 100 255 / 85%);
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    0 0 8px rgb(218 100 255 / 80%),
+    0 0 20px rgb(168 85 247 / 45%),
+    inset 0 0 8px rgb(218 100 255 / 30%);
+  transform: translate(-50%, -50%) scale(0.6);
+  animation: hacker-power-up 850ms ease-out forwards;
+}
+
+/* Additional transparent rings for the power-up effect. */
+.hacker-power-aura::before,
+.hacker-power-aura::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border: 1px solid rgb(255 120 233 / 65%);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.hacker-power-aura::before {
+  animation: hacker-aura-ring 850ms ease-out forwards;
+}
+
+.hacker-power-aura::after {
+  animation: hacker-aura-ring 850ms 150ms ease-out forwards;
+}
+
+/* Expand and fade the main power-up aura. */
+@keyframes hacker-power-up {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+/* Expand and fade the secondary neon rings. */
+@keyframes hacker-aura-ring {
+  from {
+    opacity: 0.9;
+    transform: scale(0.7);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
 /* Respect visitors who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
-  .hacker-neon-spark {
+  .hacker-neon-spark,
+  .hacker-power-aura,
+  .hacker-power-aura::before,
+  .hacker-power-aura::after {
     animation: none;
     display: none;
   }
@@ -369,14 +448,16 @@ main {
   color: var(--background);
   font-weight: 700;
 }
+
 /* Enable button transitions only when reduced motion is not requested. */
 @media (prefers-reduced-motion: no-preference) {
   .button {
     transition:
       transform 0.2s,
-      background 0.2s;
+      background-color 0.2s;
   }
 }
+
 .button:hover {
   background: transparent;
   color: var(--accent);

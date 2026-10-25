@@ -637,8 +637,11 @@ if (navBuilder && navLogo) {
   }
 
   /**
-   * Makes the character follow the flying navigation text
-   * toward the selected page section before catching it.
+   * Times the hacker's jump so he catches the neon word
+   * when it reaches the selected page section.
+   *
+   * The hacker waits briefly, then grows while jumping
+   * toward the word's final landing position.
    *
    * @param {HTMLElement} flyingText - Animated navigation text.
    * @param {Animation} animation - Flying text animation.
@@ -651,52 +654,166 @@ if (navBuilder && navLogo) {
 
     const builderRect = navBuilder.getBoundingClientRect();
 
-    // Move the character into the page so it can
-    // leave the navigation bar.
+    const startX = builderRect.left;
+    const startY = builderRect.top;
+
+    const section = document.querySelector(
+      selectedNavLink?.getAttribute("href"),
+    );
+
+    if (!section) {
+      restoreBuilder(version);
+      return;
+    }
+
+    const sectionRect = section.getBoundingClientRect();
+
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = window.innerHeight;
+
+    const builderWidth = navBuilder.offsetWidth;
+    const builderHeight = navBuilder.offsetHeight;
+
+    const finalScale = 2.2;
+
+    // Keep the enlarged hacker within the browser width.
+    const maxX = Math.max(0, viewportWidth - builderWidth * finalScale);
+
+    const targetX = Math.max(
+      0,
+      Math.min(
+        sectionRect.left +
+          sectionRect.width / 2 -
+          (builderWidth * finalScale) / 2,
+        maxX,
+      ),
+    );
+
+    const targetY = Math.max(
+      0,
+      Math.min(
+        sectionRect.top +
+          sectionRect.height / 2 -
+          (builderHeight * finalScale) / 2,
+        viewportHeight - builderHeight * finalScale,
+      ),
+    );
+
+    // Switch to fixed positioning for the page-level jump.
     navBuilder.style.position = "fixed";
-    navBuilder.style.left = `${builderRect.left}px`;
-    navBuilder.style.top = `${builderRect.top}px`;
+    navBuilder.style.left = `${startX}px`;
+    navBuilder.style.top = `${startY}px`;
     navBuilder.style.bottom = "auto";
     navBuilder.style.transform = "none";
+    navBuilder.style.transformOrigin = "top left";
     navBuilder.style.zIndex = "1001";
 
     isFollowingText = true;
 
+    const totalDuration = 1100;
+    const jumpDelay = 300;
+    const jumpDuration = totalDuration - jumpDelay;
+
     let frameIndex = 0;
 
     /**
-     * Updates the character's position while following
-     * the flying navigation text.
+     * Moves the hacker toward the landing point while
+     * synchronizing with the flying word's animation.
      */
     function followText() {
       if (version !== animationVersion) {
         return;
       }
 
-      if (animation.playState === "finished") {
-        activeFrame = null;
-        animateCatch(version);
-        return;
-      }
+      const elapsed = Math.min(animation.currentTime || 0, totalDuration);
 
-      const textRect = flyingText.getBoundingClientRect();
+      const progress = Math.max(
+        0,
+        Math.min((elapsed - jumpDelay) / jumpDuration, 1),
+      );
 
-      const progress = Math.min((animation.currentTime || 0) / 1100, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 2);
 
-      const height = Math.sin(progress * Math.PI) * 45;
+      const scale = 1 + (finalScale - 1) * easedProgress;
+
+      const x = startX + (targetX - startX) * easedProgress;
+
+      const arc = Math.sin(progress * Math.PI) * 55;
+
+      const y = startY + (targetY - startY) * easedProgress - arc;
 
       navBuilder.src = jumpFrames[frameIndex];
 
-      navBuilder.style.left = `${textRect.left - navBuilder.offsetWidth / 2}px`;
-
-      navBuilder.style.top = `${textRect.top - height}px`;
+      navBuilder.style.left = `${x}px`;
+      navBuilder.style.top = `${y}px`;
+      navBuilder.style.transform = `scale(${scale})`;
 
       frameIndex = (frameIndex + 1) % jumpFrames.length;
+
+      if (animation.playState === "finished" || elapsed >= totalDuration) {
+        activeFrame = null;
+
+        // Position the hacker at the word's landing point.
+        navBuilder.style.left = `${targetX}px`;
+        navBuilder.style.top = `${targetY}px`;
+        navBuilder.style.transform = `scale(${finalScale})`;
+
+        animateCatch(version);
+        return;
+      }
 
       activeFrame = requestAnimationFrame(followText);
     }
 
     followText();
+  }
+
+  /**
+   * Creates a hollow cyberpunk power-up aura around
+   * the hacker after catching the navigation text.
+   *
+   * The aura expands and fades without covering the sprite.
+   *
+   * @param {number} version - Current animation version.
+   */
+  function animatePowerUp(version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
+    const builderRect = navBuilder.getBoundingClientRect();
+
+    const aura = document.createElement("div");
+    aura.className = "hacker-power-aura";
+
+    Object.assign(aura.style, {
+      position: "fixed",
+      left: `${builderRect.left + builderRect.width / 2}px`,
+      top: `${builderRect.top + builderRect.height / 2}px`,
+      width: `${builderRect.width}px`,
+      height: `${builderRect.height}px`,
+      pointerEvents: "none",
+      zIndex: "1000",
+    });
+
+    document.body.appendChild(aura);
+
+    // Keep the hacker visible above the aura.
+    navBuilder.style.zIndex = "1001";
+
+    aura.addEventListener(
+      "animationend",
+      () => {
+        aura.remove();
+
+        if (version !== animationVersion) {
+          return;
+        }
+
+        returnWithText(version);
+      },
+      { once: true },
+    );
   }
 
   /**
@@ -733,9 +850,49 @@ if (navBuilder && navLogo) {
 
       if (frameIndex >= catchFrames.length) {
         stopMotion();
-        returnWithText(version);
+
+        // Power up before carrying the captured word home.
+        animatePowerUp(version);
       }
     }, 120);
+  }
+
+  /**
+   * Positions the captured navigation text in front of
+   * the hacker so it appears to be held while moving.
+   *
+   * The text remains readable regardless of which
+   * direction the hacker is facing.
+   *
+   * @param {HTMLElement} carriedText - Captured navigation word.
+   * @param {number} direction - Hacker facing direction.
+   */
+  function positionCarriedText(carriedText, direction) {
+    const builderRect = navBuilder.getBoundingClientRect();
+    const textRect = carriedText.getBoundingClientRect();
+
+    const viewportWidth = document.documentElement.clientWidth;
+
+    // Position the word in front of the hacker's upper body.
+    const handHeight = builderRect.top + builderRect.height * 0.45;
+
+    const gap = 3;
+
+    let textX;
+
+    if (direction === 1) {
+      // Facing right: hold the word on the right.
+      textX = builderRect.right + gap;
+    } else {
+      // Facing left: hold the word on the left.
+      textX = builderRect.left - textRect.width - gap;
+    }
+
+    // Keep the word within the browser viewport.
+    textX = Math.max(0, Math.min(textX, viewportWidth - textRect.width));
+
+    carriedText.style.left = `${textX}px`;
+    carriedText.style.top = `${handHeight - textRect.height / 2}px`;
   }
 
   /**
@@ -753,8 +910,7 @@ if (navBuilder && navLogo) {
 
     const carriedText = document.createElement("span");
     carriedText.textContent = link.textContent.trim();
-    carriedText.classList.add("hacker-neon-text");
-
+    carriedText.classList.add("hacker-neon-text", "hacker-carried-text");
     Object.assign(carriedText.style, {
       position: "fixed",
       left: `${builderRect.left + navBuilder.offsetWidth / 2}px`,
@@ -799,14 +955,16 @@ if (navBuilder && navLogo) {
 
       const y = startY + (endY - startY) * progress;
 
+      // Face the direction of travel.
+      const direction = endX >= startX ? 1 : -1;
+
       navBuilder.src = runFrames[frameIndex];
       navBuilder.style.left = `${x}px`;
       navBuilder.style.top = `${y}px`;
-      navBuilder.style.transform = "scaleX(-1)";
+      navBuilder.style.transform = `scaleX(${direction})`;
 
-      carriedText.style.left = `${x + navBuilder.offsetWidth / 2}px`;
-
-      carriedText.style.top = `${y - 20}px`;
+      // Keep the word in front of the hacker's hands.
+      positionCarriedText(carriedText, direction);
 
       frameIndex = (frameIndex + 1) % runFrames.length;
 
