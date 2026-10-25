@@ -88,7 +88,7 @@ if (navBuilder && navLogo) {
   ];
 
   // Normal patrol speed
-  const runSpeed = 15;
+  const runSpeed = 20;
   const runFrameDelay = 60;
 
   // Navigation-click speed
