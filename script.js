@@ -468,6 +468,9 @@ if (navBuilder && navLogo) {
   /**
    * Plays the throwing animation and temporarily hides
    * the selected navigation link's text.
+   *
+   * The word launches as the hacker begins the final
+   * throwing frame instead of after the animation ends.
    */
   function animateThrow(version) {
     if (!selectedNavLink || version !== animationVersion) {
@@ -482,9 +485,10 @@ if (navBuilder && navLogo) {
       }
 
       navBuilder.src = throwFrames[frameIndex];
-      frameIndex++;
 
-      if (frameIndex >= throwFrames.length) {
+      // Launch the word when the final throwing frame begins.
+      if (frameIndex === throwFrames.length - 1) {
+        // Stop the sprite timer before starting the flying animation.
         stopMotion();
 
         // Transform the selected word into neon pink when thrown.
@@ -494,7 +498,10 @@ if (navBuilder && navLogo) {
         activeHiddenLink.style.color = "transparent";
 
         animateFlyingText(version);
+        return;
       }
+
+      frameIndex++;
     }, 150);
   }
 
@@ -622,17 +629,15 @@ if (navBuilder && navLogo) {
 
     requestAnimationFrame(updateSparks);
 
-    animateChaseJump(flyingText, animation, version);
+    animateChaseJump(flyingText, animation, version, bounceRight);
 
     animation.addEventListener("finish", () => {
       if (version !== animationVersion) {
         return;
       }
 
-      flyingText.remove();
-
+      // Keep the captured word visible for the power-up.
       activeTextAnimation = null;
-      activeFlyingText = null;
     });
   }
 
@@ -646,8 +651,9 @@ if (navBuilder && navLogo) {
    * @param {HTMLElement} flyingText - Animated navigation text.
    * @param {Animation} animation - Flying text animation.
    * @param {number} version - Current animation version.
+   * @param {boolean} bounceRight - Whether the word bounced off the right wall.
    */
-  function animateChaseJump(flyingText, animation, version) {
+  function animateChaseJump(flyingText, animation, version, bounceRight) {
     if (version !== animationVersion) {
       return;
     }
@@ -689,6 +695,10 @@ if (navBuilder && navLogo) {
       ),
     );
 
+    // Face the direction the flying word travels after bouncing.
+    // The original sprite images naturally face right.
+    const chaseDirection = bounceRight ? 1 : -1;
+
     const targetY = Math.max(
       0,
       Math.min(
@@ -705,7 +715,7 @@ if (navBuilder && navLogo) {
     navBuilder.style.top = `${startY}px`;
     navBuilder.style.bottom = "auto";
     navBuilder.style.transform = "none";
-    navBuilder.style.transformOrigin = "top left";
+    navBuilder.style.transformOrigin = "center center";
     navBuilder.style.zIndex = "1001";
 
     isFollowingText = true;
@@ -746,7 +756,9 @@ if (navBuilder && navLogo) {
 
       navBuilder.style.left = `${x}px`;
       navBuilder.style.top = `${y}px`;
-      navBuilder.style.transform = `scale(${scale})`;
+
+      // Face the direction the flying word is moving.
+      navBuilder.style.transform = `scale(${chaseDirection * scale}, ${scale})`;
 
       frameIndex = (frameIndex + 1) % jumpFrames.length;
 
@@ -756,7 +768,8 @@ if (navBuilder && navLogo) {
         // Position the hacker at the word's landing point.
         navBuilder.style.left = `${targetX}px`;
         navBuilder.style.top = `${targetY}px`;
-        navBuilder.style.transform = `scale(${finalScale})`;
+
+        navBuilder.style.transform = `scale(${chaseDirection * finalScale}, ${finalScale})`;
 
         animateCatch(version);
         return;
@@ -766,6 +779,105 @@ if (navBuilder && navLogo) {
     }
 
     followText();
+  }
+
+  /**
+   * Animates the captured neon word rising above the
+   * hacker's head before the power-up begins.
+   *
+   * @param {HTMLElement} text - Captured navigation word.
+   * @param {number} version - Current animation version.
+   */
+  function raiseCapturedText(text, version) {
+    if (!text || version !== animationVersion) {
+      return;
+    }
+
+    // Preserve the word's current visible position.
+    const textRect = text.getBoundingClientRect();
+
+    // Stop the completed flying animation without losing its position.
+    text.getAnimations().forEach((animation) => {
+      animation.cancel();
+    });
+
+    text.style.left = `${textRect.left}px`;
+    text.style.top = `${textRect.top}px`;
+    text.style.zIndex = "1002";
+
+    // Calculate the position above the hacker's head.
+    const builderRect = navBuilder.getBoundingClientRect();
+
+    const targetX = clampFlyingTextX(
+      builderRect.left + builderRect.width / 2 - textRect.width / 2,
+      textRect.width,
+    );
+
+    const targetY = Math.max(0, builderRect.top - textRect.height - 8);
+
+    const animation = text.animate(
+      [
+        {
+          left: `${textRect.left}px`,
+          top: `${textRect.top}px`,
+        },
+        {
+          left: `${targetX}px`,
+          top: `${targetY}px`,
+        },
+      ],
+      {
+        duration: 360,
+        easing: "ease-out",
+        fill: "forwards",
+      },
+    );
+
+    activeTextAnimation = animation;
+
+    animation.addEventListener(
+      "finish",
+      () => {
+        if (version !== animationVersion) {
+          return;
+        }
+
+        // Preserve the final position before removing the animation.
+        text.style.left = `${targetX}px`;
+        text.style.top = `${targetY}px`;
+
+        animation.cancel();
+        activeTextAnimation = null;
+      },
+      { once: true },
+    );
+  }
+
+  /**
+   * Positions the captured neon word above the hacker
+   * so it appears to be held up during the power-up.
+   *
+   * @param {HTMLElement} text - Captured navigation word.
+   */
+  function positionPowerUpText(text) {
+    const builderRect = navBuilder.getBoundingClientRect();
+    const textRect = text.getBoundingClientRect();
+
+    const viewportWidth = document.documentElement.clientWidth;
+
+    const x = Math.max(
+      0,
+      Math.min(
+        builderRect.left + builderRect.width / 2 - textRect.width / 2,
+        viewportWidth - textRect.width,
+      ),
+    );
+
+    const y = Math.max(0, builderRect.top - textRect.height - 8);
+
+    text.style.left = `${x}px`;
+    text.style.top = `${y}px`;
+    text.style.zIndex = "1002";
   }
 
   /**
@@ -779,6 +891,11 @@ if (navBuilder && navLogo) {
   function animatePowerUp(version) {
     if (version !== animationVersion) {
       return;
+    }
+
+    // Keep the captured word above the hacker during the power-up.
+    if (activeFlyingText) {
+      positionPowerUpText(activeFlyingText);
     }
 
     const builderRect = navBuilder.getBoundingClientRect();
@@ -810,6 +927,12 @@ if (navBuilder && navLogo) {
           return;
         }
 
+        // The return animation creates its own carried-word element.
+        if (activeFlyingText) {
+          activeFlyingText.remove();
+          activeFlyingText = null;
+        }
+
         returnWithText(version);
       },
       { once: true },
@@ -819,6 +942,9 @@ if (navBuilder && navLogo) {
   /**
    * Plays the character's catching animation after
    * the navigation text reaches its destination.
+   *
+   * The captured word rises above the hacker's head
+   * before the purple power-up begins.
    */
   function animateCatch(version) {
     if (version !== animationVersion) {
@@ -839,6 +965,7 @@ if (navBuilder && navLogo) {
     }
 
     let frameIndex = 0;
+    let textRaised = false;
 
     activeTimer = setInterval(() => {
       if (version !== animationVersion) {
@@ -846,13 +973,27 @@ if (navBuilder && navLogo) {
       }
 
       navBuilder.src = catchFrames[frameIndex];
+
+      // Raise the captured word partway through the catch animation.
+      if (frameIndex === 1 && !textRaised && activeFlyingText) {
+        textRaised = true;
+        raiseCapturedText(activeFlyingText, version);
+      }
+
       frameIndex++;
 
       if (frameIndex >= catchFrames.length) {
         stopMotion();
 
-        // Power up before carrying the captured word home.
-        animatePowerUp(version);
+        // Allow the word to finish rising before powering up.
+        activeTimer = setTimeout(() => {
+          if (version !== animationVersion) {
+            return;
+          }
+
+          activeTimer = null;
+          animatePowerUp(version);
+        }, 350);
       }
     }, 120);
   }
