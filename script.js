@@ -680,7 +680,7 @@ if (navBuilder && navLogo) {
     const builderWidth = navBuilder.offsetWidth;
     const builderHeight = navBuilder.offsetHeight;
 
-    const finalScale = 2.2;
+    const finalScale = 4;
 
     // Keep the enlarged hacker within the browser width.
     const maxX = Math.max(0, viewportWidth - builderWidth * finalScale);
@@ -1072,7 +1072,10 @@ if (navBuilder && navLogo) {
 
     const endY = linkRect.top;
 
+    // Return to the navbar while gradually shrinking.
     const duration = 900;
+    const startScale = 4;
+    const endScale = 1;
 
     let startTime = null;
     let frameIndex = 0;
@@ -1092,6 +1095,11 @@ if (navBuilder && navLogo) {
 
       const progress = Math.min((timestamp - startTime) / duration, 1);
 
+      // Smoothly shrink the hacker as he returns to the navbar.
+      const easedProgress = 1 - Math.pow(1 - progress, 2);
+
+      const scale = startScale + (endScale - startScale) * easedProgress;
+
       const x = startX + (endX - startX) * progress;
 
       const y = startY + (endY - startY) * progress;
@@ -1102,7 +1110,9 @@ if (navBuilder && navLogo) {
       navBuilder.src = runFrames[frameIndex];
       navBuilder.style.left = `${x}px`;
       navBuilder.style.top = `${y}px`;
-      navBuilder.style.transform = `scaleX(${direction})`;
+
+      // Maintain the correct facing direction while shrinking.
+      navBuilder.style.transform = `scale(${direction * scale}, ${scale})`;
 
       // Keep the word in front of the hacker's hands.
       positionCarriedText(carriedText, direction);
