@@ -1540,3 +1540,53 @@ if (navBuilder && navLogo) {
     animateJump(animationVersion);
   }
 }
+
+/**
+ * Smoothly repel the floating hero logo when hovered.
+ * Keep the original floating and glitch animations.
+ */
+(function initializeLogoRepulsion() {
+  const logo = document.querySelector(".hero-logo");
+
+  if (!logo) {
+    return;
+  }
+
+  const REPEL_X = 250;
+  const REPEL_Y = 35;
+  const RETURN_DELAY = 650;
+
+  let resetTimeout;
+
+  logo.addEventListener("mouseenter", function (event) {
+    clearTimeout(resetTimeout);
+
+    // Prevent the logo from repeatedly jumping while repelling.
+    if (logo.classList.contains("is-repelling")) {
+      return;
+    }
+
+    const rect = logo.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    const directionX = event.clientX >= centerX ? -1 : 1;
+    const directionY = event.clientY >= centerY ? -1 : 1;
+
+    logo.style.setProperty("--repel-x", `${directionX * REPEL_X}px`);
+    logo.style.setProperty("--repel-y", `${directionY * REPEL_Y}px`);
+
+    logo.classList.add("is-repelling");
+  });
+
+  logo.addEventListener("mouseleave", function () {
+    clearTimeout(resetTimeout);
+
+    resetTimeout = setTimeout(function () {
+      logo.style.setProperty("--repel-x", "0px");
+      logo.style.setProperty("--repel-y", "0px");
+
+      logo.classList.remove("is-repelling");
+    }, RETURN_DELAY);
+  });
+})();

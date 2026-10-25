@@ -337,6 +337,9 @@ main {
 
 /* Floating hero logo */
 .hero-logo {
+  --repel-x: 0px;
+  --repel-y: 0px;
+
   display: block;
   width: 320px;
   height: 320px;
@@ -346,7 +349,12 @@ main {
   align-self: center;
   margin-bottom: 36px;
   filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.4));
+
+  /* Preserve vertical floating and add horizontal mouse repulsion */
   animation: hero-float 3s ease-in-out infinite;
+  translate: var(--repel-x) var(--repel-y);
+  transition: translate 250ms ease-out;
+  will-change: translate;
 }
 
 /* Hero logo floating animation */
@@ -361,41 +369,37 @@ main {
   }
 }
 
-/* Floating hero logo hover effect */
+/* Glitch while hovering or moving away from the mouse */
 @media (prefers-reduced-motion: no-preference) {
-  .hero-logo:hover {
+  .hero-logo:hover,
+  .hero-logo.is-repelling {
     animation:
       hero-float 3s ease-in-out infinite,
-      hero-glitch 0.4s steps(2, end);
+      hero-glitch 0.4s steps(2, end) infinite;
   }
 }
 
-/* Hero logo glitch animation */
+/* Hero logo glitch animation without interfering with mouse repulsion */
 @keyframes hero-glitch {
   0%,
   100% {
-    translate: 0 0;
     filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.4));
   }
 
   20% {
-    translate: -5px 2px;
-    filter: drop-shadow(5px 0 6px #00ff88);
+    filter: drop-shadow(7px 0 5px #00ff88) drop-shadow(-5px 0 4px #a855f7);
   }
 
   40% {
-    translate: 5px -3px;
-    filter: drop-shadow(-5px 0 6px var(--accent));
+    filter: drop-shadow(-7px 0 5px #a855f7) drop-shadow(5px 0 4px #00ff88);
   }
 
   60% {
-    translate: -4px -2px;
-    filter: drop-shadow(4px 0 8px #00ff88);
+    filter: drop-shadow(5px 0 7px #00ff88) drop-shadow(-4px 0 5px #a855f7);
   }
 
   80% {
-    translate: 4px 3px;
-    filter: drop-shadow(-4px 0 8px var(--accent));
+    filter: drop-shadow(-5px 0 7px #a855f7) drop-shadow(4px 0 5px #00ff88);
   }
 }
 
@@ -647,16 +651,4 @@ footer {
     outline: 3px solid transparent;
     outline-offset: 20px;
   }
-}
-
-/* Remove borders and outlines from animated sprites */
-#nav-builder,
-#mascot-logo,
-#nav-builder img,
-#mascot-logo img {
-  border: none;
-  outline: none;
-  box-shadow: none;
-  background: transparent;
-  border-radius: 0;
 }
