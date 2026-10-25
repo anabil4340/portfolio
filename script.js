@@ -1590,3 +1590,119 @@ if (navBuilder && navLogo) {
     }, RETURN_DELAY);
   });
 })();
+
+/**
+ * Animate holographic green numbers falling behind the portfolio.
+ * Uses a canvas to create a Matrix-inspired digital rain effect.
+ */
+(function initializeMatrixRain() {
+  const canvas = document.querySelector("#matrix-rain");
+
+  if (!canvas) {
+    return;
+  }
+
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    return;
+  }
+
+  const FONT_SIZE = 16;
+  const FRAME_INTERVAL = 45;
+  const CHARACTERS = "0123456789";
+  const prefersReducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  );
+
+  let columns = [];
+  let lastFrameTime = 0;
+  let animationId = null;
+
+  /**
+   * Resize the canvas and recreate the falling number columns.
+   */
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const columnCount = Math.ceil(canvas.width / FONT_SIZE);
+
+    columns = Array.from({ length: columnCount }, () => ({
+      y: Math.random() * -canvas.height,
+      speed: 0.6 + Math.random() * 1.4,
+    }));
+
+    context.fillStyle = "#08080c";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  /**
+   * Draw a single frame of falling holographic numbers.
+   *
+   * @param {number} timestamp - Current animation timestamp.
+   */
+  function drawRain(timestamp) {
+    animationId = requestAnimationFrame(drawRain);
+
+    if (timestamp - lastFrameTime < FRAME_INTERVAL) {
+      return;
+    }
+
+    lastFrameTime = timestamp;
+
+    // Fade previous frames to create glowing number trails.
+    context.fillStyle = "rgba(8, 8, 12, 0.08)";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    context.font = `${FONT_SIZE}px monospace`;
+    context.textAlign = "center";
+
+    columns.forEach((column, index) => {
+      const digit = CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)];
+
+      const x = index * FONT_SIZE + FONT_SIZE / 2;
+
+      // Bright green leading digit with a soft neon glow.
+      context.fillStyle = "#8affb0";
+      context.shadowColor = "#00ff66";
+      context.shadowBlur = 8;
+
+      context.fillText(digit, x, column.y);
+
+      context.shadowBlur = 0;
+
+      column.y += FONT_SIZE * column.speed;
+
+      // Restart each column after it passes the bottom.
+      if (column.y > canvas.height && Math.random() > 0.975) {
+        column.y = -Math.random() * canvas.height;
+      }
+    });
+  }
+
+  /**
+   * Start or stop animation based on motion preferences.
+   */
+  function updateAnimation() {
+    if (animationId !== null) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+
+    if (prefersReducedMotion.matches) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+
+    lastFrameTime = 0;
+    animationId = requestAnimationFrame(drawRain);
+  }
+
+  resizeCanvas();
+  updateAnimation();
+
+  window.addEventListener("resize", resizeCanvas);
+
+  prefersReducedMotion.addEventListener("change", updateAnimation);
+})();

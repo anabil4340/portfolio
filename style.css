@@ -471,8 +471,10 @@ main {
 
 /* Shared content section layout */
 .section {
-  padding: 80px 0;
+  padding: 80px 24px;
   border-top: 1px solid var(--border);
+  background: rgba(8, 8, 18, 0.88);
+  border-radius: 12px;
 }
 
 .section > h2 {
@@ -651,4 +653,31 @@ footer {
     outline: 3px solid transparent;
     outline-offset: 20px;
   }
+}
+
+/* Holographic falling numbers behind the website */
+#matrix-rain {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.18;
+}
+
+/* Respect visitors who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #matrix-rain {
+    display: none;
+  }
+}
+
+/* Improve text readability over the animated background */
+main h1,
+main h2,
+main h3,
+main p,
+main li {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
 }
